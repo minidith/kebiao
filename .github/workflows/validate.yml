@@ -1,12 +1,25 @@
-name: 课表数据校验与自动发布
+name: 课表校验
 
-on:/n  push:/n    branches: [main]
-    paths: ["schedule-widget.json", "index.html", "apple-touch-icon.png"]
-  workflow_dispatch:/n/npermissions:/n  contents: read
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - schedule-widget.json
+      - index.html
+      - apple-touch-icon.png
+  workflow_dispatch:
 
-jobs:/n  validate:/n    runs-on: ubuntu-latest
-    steps:/n      - uses: actions/checkout@v4
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with:/n          node-version: "20"
+        with:
+          node-version: "20"
       - name: 校验课表数据
         run: node .github/scripts/validate.js
