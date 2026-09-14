@@ -4,10 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - schedule-widget.json
-      - index.html
-      - apple-touch-icon.png
   workflow_dispatch:
 
 permissions:
