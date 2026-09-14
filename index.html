@@ -222,6 +222,17 @@ main{padding:10px 12px calc(var(--sab) + 78px)}
 .filebtn{position:relative;overflow:hidden;display:block}
 .filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .note{font-size:12px;color:var(--ink3);line-height:1.6;background:var(--soft);padding:10px 12px;border-radius:10px}
+/* 使用帮助页 */
+.helppage{padding:12px 14px 28px;font-size:14px;line-height:1.62;color:var(--ink)}
+.helppage .hsec{margin:16px 0 4px}
+.helppage p{margin:7px 0}
+.helppage ul{margin:6px 0;padding-left:20px}
+.helppage li{margin:4px 0}
+.helppage b{color:var(--brand)}
+.helppage .code{display:inline-block;background:var(--soft);border:1px solid var(--line);padding:1px 7px;border-radius:6px;font-size:12.5px;color:var(--brand);word-break:break-all}
+.helppage .step{display:flex;gap:9px;align-items:flex-start;margin:7px 0}
+.helppage .step .n{flex:0 0 20px;height:20px;width:20px;border-radius:50%;background:var(--grad);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.helppage .linkcard{display:block;background:var(--grad);color:#fff;text-align:center;padding:11px;border-radius:12px;font-weight:700;text-decoration:none;margin:10px 0}
 ol.steps{margin:0;padding-left:20px;font-size:13.5px;color:var(--ink);line-height:1.85}
 ol.steps li{margin-bottom:2px}
 ol.steps .ico{font-size:13px}
@@ -334,6 +345,81 @@ ol.steps .ico{font-size:13px}
     </main>
   </div>
 
+  <div id="pageHelp" class="hidden" data-page-node-id="helpRNN6eY9">
+    <main class="helppage" data-page-node-id="helpMainX8">
+      <a class="linkcard" href="https://minidith.github.io/kebiao/" target="_blank" rel="noopener">打开在线课表 ↗</a>
+
+      <div class="card" style="padding:14px 16px">
+        <div class="sec-title" style="margin-top:0">它是什么</div>
+        <p>这是一个<b>单文件网页课表</b>（手机/电脑浏览器直接打开，零外部依赖）。数据存在你本机浏览器，云端只托管一份用于桌面小组件同步。</p>
+        <ul>
+          <li><b>在线链接</b>（独立、不挑 WiFi、不依赖电脑开机）：<span class="code">https://minidith.github.io/kebiao/</span></li>
+          <li><b>iPhone 桌面小组件</b>：用免费 Scriptable App 读云端 JSON，不点进 App 也能看课。</li>
+          <li><b>GitHub Action</b>：每次同步自动校验课表数据，防止写错。</li>
+        </ul>
+      </div>
+
+      <div class="sec-title hsec">底部三个标签</div>
+      <div class="card" style="padding:14px 16px">
+        <ul>
+          <li><b>课表</b>：按日 / 周查看，点格子调课、停课、加课。</li>
+          <li><b>课程</b>：本学期全部课程清单，可编辑、删除、加新课。</li>
+          <li><b>管理</b>：学期设置、导入 Excel、备份、生成小组件数据、一键同步。</li>
+        </ul>
+      </div>
+
+      <div class="sec-title hsec">一、看课表（课表页）</div>
+      <div class="card" style="padding:14px 16px">
+        <ul>
+          <li>右上角 <b>日 / 周</b> 切换：日＝当天课程，周＝周一到周日 × 第 1–12 节固定网格。</li>
+          <li><b>‹ ›</b> 切上 / 下周；<b>本周</b> 一键回到当前教学周。</li>
+          <li>日视图顶部 7 天日期条，点某天跳到那天。</li>
+          <li>点课程格子 → 弹出：<b>本周停课</b>（假期 / 出差）、<b>调课</b>（改到某周几某节）、<b>加一次临时课</b>。</li>
+          <li>页内「本周停课」按钮可一键停掉整周，再点恢复；所有操作都能<b>撤销</b>。</li>
+        </ul>
+      </div>
+
+      <div class="sec-title hsec">二、改课表</div>
+      <div class="card" style="padding:14px 16px">
+        <p><b>① 换学期整体导入</b>：管理 → 导入 Excel 课表（.xlsx）。支持「新建学期」或「覆盖当前学期」。表格格式：首行星期，首列含「第 N 节」+ 时间，单元格含 课名【教师】(地点,第 X-Y 周)。</p>
+        <p><b>② 临时调 / 停 / 加</b>：课表页直接点格子。</p>
+        <p><b>③ 大改某门课</b>：课程页编辑 / 删除，或底部「+ 添加课程」。</p>
+        <p><b>④ 改学期信息</b>：管理 → 修改学期设置（名称、第一周周一日期、总周数）。每学期间起始日不同就在这里设。</p>
+      </div>
+
+      <div class="sec-title hsec">三、备份与防丢</div>
+      <div class="card" style="padding:14px 16px">
+        <p>数据只存在本机浏览器，清缓存 / 换手机会丢。务必：管理 → <b>导出备份（JSON）</b> 存一份；需要时 <b>导入备份（JSON）</b> 恢复。</p>
+      </div>
+
+      <div class="sec-title hsec">四、桌面小组件一键同步</div>
+      <div class="card" style="padding:14px 16px">
+        <div class="step"><span class="n">1</span><p>管理 → GitHub 同步，填一次 <b>PAT 令牌</b>（仅 repo 权限，只存你手机浏览器）→ 保存设置。</p></div>
+        <div class="step"><span class="n">2</span><p>改完课表，点 <b>🚀 发布到 GitHub（一键同步）</b>。</p></div>
+        <div class="step"><span class="n">3</span><p>约 30 秒后桌面小组件自动刷新（GitHub Action 自动校验 + Pages 自动上线）。</p></div>
+        <p class="note" style="margin-top:8px">提示：页面按钮用的 PAT 是 7 天有效期，到期后在 GitHub 重新生成一个同权限的填进「保存设置」即可；公网链接不受影响。</p>
+      </div>
+
+      <div class="sec-title hsec">五、iPhone 桌面小组件安装</div>
+      <div class="card" style="padding:14px 16px">
+        <div class="step"><span class="n">1</span><p>App Store 装 <b>Scriptable</b>（免费）。</p></div>
+        <div class="step"><span class="n">2</span><p>打开 → 右上角 <b>+</b> → 全选粘贴 <b>课表小组件.js</b> → 命名「课表」。</p></div>
+        <div class="step"><span class="n">3</span><p>桌面长按空白处 → 加小组件 → 选 <b>Scriptable</b> → 选尺寸（小 / 中 / 大）→ 长按组件 → 编辑 → Script 选「课表」。</p></div>
+        <p>小＝第几周·周几 + 今天有无课；中＝今天课程清单；大＝今天课程 + 周一到周日每天几节概览。脚本默认读云端 JSON，离线时回退读 Scriptable 文件夹里的同名文件。</p>
+      </div>
+
+      <div class="sec-title hsec">六、首次添加到主屏幕（iPhone）</div>
+      <div class="card" style="padding:14px 16px">
+        <p>Safari 打开 <span class="code">https://minidith.github.io/kebiao/</span> → 分享 → <b>添加到主屏幕</b> → 桌面出现课表图标，离线也能开。</p>
+      </div>
+
+      <div class="card" style="padding:14px 16px">
+        <div class="sec-title" style="margin-top:0">隐私提醒</div>
+        <p>在线链接是<b>公开</b>的，任何拿到地址的人都能看课表（一般无碍）。若介意，可后续换私有托管。GitHub 令牌只存在本机浏览器，不会上传到代码仓库。</p>
+      </div>
+    </main>
+  </div>
+
   <nav class="tabs" data-page-node-id="zyAGM0w4ukj3tHdqfUTGI4">
     <button class="tab on" data-p="main" data-page-node-id="9UgnhaOhDYBAWp4Rw3ox8A">
       <svg viewBox="0 0 24 24" data-page-node-id="gDBYDxNPRnvTljGQsGboM1"><rect x="3" y="4" width="18" height="17" rx="2" data-page-node-id="daYB4mbxfwXQdYklHqnFk3"/><path d="M3 9h18M8 2v4M16 2v4" data-page-node-id="reIX8GTVJr2dMIwkDNurib"/></svg>
@@ -346,6 +432,10 @@ ol.steps .ico{font-size:13px}
     <button class="tab" data-p="admin" data-page-node-id="wvscfYPDVa7hB80P0ZuBRq">
       <svg viewBox="0 0 24 24" data-page-node-id="uXhGu9OANWi9yv2yILw8Kx"><circle cx="12" cy="12" r="3" data-page-node-id="3wnmDU5m6HEma5AnKVRerm"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7.5 19.4l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 13.9H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 7.5l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 10 3.1V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.6 1.4l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z" data-page-node-id="DZHqzREdbClDeNhh7RGyYd"/></svg>
       管理
+    </button>
+    <button class="tab" data-p="help" data-page-node-id="tabHelpQ2">
+      <svg viewBox="0 0 24 24" data-page-node-id="helpIc9"><circle cx="12" cy="12" r="9" data-page-node-id="helpC1"/><path d="M9.2 9.3a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 4" data-page-node-id="helpP2"/><circle cx="12" cy="17.2" r="1.05" fill="currentColor" stroke="none" data-page-node-id="helpD3"/></svg>
+      帮助
     </button>
   </nav>
 </div>
@@ -508,6 +598,7 @@ function render(){
   $('pageMain').classList.toggle('hidden',S.page!=='main');
   $('pageCourses').classList.toggle('hidden',S.page!=='courses');
   $('pageAdmin').classList.toggle('hidden',S.page!=='admin');
+  $('pageHelp').classList.toggle('hidden',S.page!=='help');
   if(S.page==='main')renderMain(s);
   if(S.page==='courses')renderCourses(s);
   if(S.page==='admin')renderAdmin(s);
