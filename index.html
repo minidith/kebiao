@@ -315,6 +315,22 @@ ol.steps .ico{font-size:13px}
         <button class="actbtn" id="btnWidget" data-page-node-id="wbWidgetBtn">生成桌面小组件数据（JSON）<span class="sub">用于手机桌面小组件，导出后放入网站并重新发布即可同步</span></button>
         <div class="note" style="margin-top:8px" data-page-node-id="PvbR4tsdxaC8f5zDTPQtzz">数据保存在本机浏览器，清理浏览器数据会丢失，建议定期导出备份。</div>
       </div>
+
+      <div class="sec-title">GitHub 同步（一键发布）</div>
+      <div class="card" style="padding:14px 16px">
+        <div class="note" style="margin-bottom:10px">改完课表点一下，自动同步到公网，桌面小组件约 30 秒后刷新。令牌只存在本机浏览器，不会上传到代码仓库。</div>
+        <label style="display:block;font-size:12px;color:#667">GitHub 令牌（PAT，需 repo 权限）<input type="password" id="ghTok" placeholder="ghp_..." autocomplete="off" style="display:block;width:100%;margin-top:4px;padding:9px;border:1px solid #ccd;border-radius:8px;font-size:16px"></label>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <label style="flex:1;font-size:12px;color:#667">仓库所有者<input type="text" id="ghOwner" value="minidith" style="display:block;width:100%;margin-top:4px;padding:9px;border:1px solid #ccd;border-radius:8px;font-size:16px"></label>
+          <label style="flex:1;font-size:12px;color:#667">仓库名<input type="text" id="ghRepo" value="kebiao" style="display:block;width:100%;margin-top:4px;padding:9px;border:1px solid #ccd;border-radius:8px;font-size:16px"></label>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="actbtn" id="ghSave" style="flex:1">保存设置</button>
+          <button class="actbtn" id="ghClear" style="flex:1">清除令牌</button>
+        </div>
+        <button class="actbtn" id="ghPublish" style="margin-top:12px;width:100%;background:#2b6cff;color:#fff;border:none;font-weight:700">🚀 发布到 GitHub（一键同步）</button>
+        <div class="note" id="ghStatus" style="margin-top:8px"></div>
+      </div>
     </main>
   </div>
 
@@ -819,6 +835,66 @@ function renderAdmin(s){
     setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
     toast('已导出 schedule-widget.json，放入网站重新发布即可');
   };
+  /* ---- GitHub 一键同步 ---- */
+  (function(){
+    var t=localStorage.getItem('gh_pat');
+    $('ghOwner').value=localStorage.getItem('gh_owner')||'minidith';
+    $('ghRepo').value=localStorage.getItem('gh_repo')||'kebiao';
+    $('ghStatus').textContent=t?('令牌已保存（'+t.slice(0,4)+'…'+t.slice(-4)+'）'):'尚未保存令牌';
+  })();
+  $('ghSave').onclick=function(){
+    var t=$('ghTok').value.trim();
+    if(t) localStorage.setItem('gh_pat',t);
+    localStorage.setItem('gh_owner',$('ghOwner').value.trim()||'minidith');
+    localStorage.setItem('gh_repo',$('ghRepo').value.trim()||'kebiao');
+    var saved=localStorage.getItem('gh_pat');
+    $('ghStatus').textContent='已保存。'+(saved?('令牌 '+saved.slice(0,4)+'…'+saved.slice(-4)):'');
+    toast('设置已保存');
+  };
+  $('ghClear').onclick=function(){
+    localStorage.removeItem('gh_pat');$('ghTok').value='';
+    $('ghStatus').textContent='令牌已清除';
+    toast('已清除令牌');
+  };
+  $('ghPublish').onclick=publishToGitHub;
+}
+
+/* UTF-8 安全的 base64（课程名含中文） */
+function b64utf8(str){
+  var bytes=new TextEncoder().encode(str),bin='';
+  for(var i=0;i<bytes.length;i++) bin+=String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+/* 把当前课表推送到 GitHub 仓库的 schedule-widget.json，触发 Pages 重建 */
+function publishToGitHub(){
+  var token=localStorage.getItem('gh_pat')||'';
+  var owner=(localStorage.getItem('gh_owner')||'minidith').trim();
+  var repo=(localStorage.getItem('gh_repo')||'kebiao').trim();
+  if(!token){ toast('请先在上方填写并保存 GitHub 令牌'); return; }
+  if(!window.fetch){ toast('当前浏览器不支持，请用 Safari/Chrome'); return; }
+  var data=buildWidgetData();
+  var content=b64utf8(JSON.stringify(data,null,1));
+  var api='https://api.github.com/repos/'+owner+'/'+repo+'/contents/schedule-widget.json';
+  var headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json',
+    'Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'};
+  $('ghStatus').textContent='正在同步…';
+  fetch(api,{method:'GET',headers:headers}).then(function(r){
+    var sha=null;
+    if(r.status===200) return r.json().then(function(j){sha=j.sha;return sha;});
+    if(r.status===404) return null;
+    throw new Error('读取仓库失败 '+r.status);
+  }).then(function(sha){
+    var body={message:'sync schedule '+new Date().toISOString().slice(0,19),content:content,branch:'main'};
+    if(sha) body.sha=sha;
+    return fetch(api,{method:'PUT',headers:headers,body:JSON.stringify(body)});
+  }).then(function(r){
+    if(!r.ok) throw new Error('提交失败 '+r.status);
+    $('ghStatus').textContent='✅ 已同步，约 30 秒后小组件刷新';
+    toast('已同步到 GitHub');
+  }).catch(function(e){
+    $('ghStatus').textContent='❌ '+e.message;
+    toast('发布失败：'+e.message);
+  });
 }
 
 /* 生成桌面小组件用的精简数据：当前学期 + 课程 + 调停课 + 临时课
