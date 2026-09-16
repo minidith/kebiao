@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-09-14T00:35:59.392Z",
+ "generatedAt": "2026-09-16T02:39:34.445Z",
  "semester": {
   "name": "2026-2027学年第一学期",
   "startDate": "2026-08-31",
@@ -69,7 +69,7 @@
  },
  "courses": [
   {
-   "id": "mu0ii4v43dqkq",
+   "id": "mu3hqp3czcmk8",
    "name": "马克思主义经典著作导读（1班）",
    "teacher": "于冰",
    "place": "主楼西509",
@@ -84,7 +84,7 @@
    "color": "#e05252"
   },
   {
-   "id": "mu0ii4v4djaaa",
+   "id": "mu3hqp3cbomkv",
    "name": "马克思主义经典著作导读（1班）",
    "teacher": "于冰",
    "place": "主楼西516",
@@ -101,7 +101,7 @@
    "color": "#e05252"
   },
   {
-   "id": "mu0ii4v47wlju",
+   "id": "mu3hqp3cc6jhk",
    "name": "中国化马克思主义理论专题研究（1班）",
    "teacher": "杨丽艳",
    "place": "主楼东206",
@@ -121,7 +121,7 @@
    "color": "#e05252"
   },
   {
-   "id": "mu0ii4v49ryjw",
+   "id": "mu3hqp3cr3j8g",
    "name": "体育-游泳基础（3班）",
    "teacher": "刘剑宇",
    "place": "新体育馆游泳馆-",
@@ -141,7 +141,7 @@
    "color": "#7c5cd6"
   },
   {
-   "id": "mu0ii4v48ple1",
+   "id": "mu3hqp3cq1x9n",
    "name": "习近平生态文明思想专题（1班）",
    "teacher": "郝佳婧",
    "place": "丹青楼420",
@@ -157,7 +157,7 @@
    "color": "#0e9fd4"
   },
   {
-   "id": "mu0ii4v4bybup",
+   "id": "mu3hqp3cl1gil",
    "name": "社会调查与统计（1班）",
    "teacher": "侯彦杰",
    "place": "丹青楼406",
@@ -173,7 +173,7 @@
    "color": "#c2701c"
   },
   {
-   "id": "mu0ii4v4yhfyl",
+   "id": "mu3hqp3caqeqc",
    "name": "中国化马克思主义理论专题研究（1班）",
    "teacher": "杨丽艳",
    "place": "丹青楼410",
@@ -193,7 +193,7 @@
    "color": "#e05252"
   },
   {
-   "id": "mu0ii4v4bty97",
+   "id": "mu3hqp3co30xz",
    "name": "体育-游泳基础（3班）",
    "teacher": "刘剑宇",
    "place": "新体育馆游泳馆-",
@@ -213,7 +213,7 @@
    "color": "#7c5cd6"
   },
   {
-   "id": "mu0ii4v4ywnuk",
+   "id": "mu3hqp3cp2cdi",
    "name": "社会调查与统计（1班）",
    "teacher": "侯彦杰",
    "place": "丹青楼406",
@@ -229,7 +229,7 @@
    "color": "#c2701c"
   },
   {
-   "id": "mu0ii4v4vjgak",
+   "id": "mu3hqp3cw0u89",
    "name": "马克思主义发展史（1班）",
    "teacher": "宋成鑫",
    "place": "主楼西414",
