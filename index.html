@@ -374,7 +374,8 @@ ol.steps .ico{font-size:13px}
           <li>右上角 <b>日 / 周</b> 切换：日＝当天课程，周＝周一到周日 × 第 1–12 节固定网格。</li>
           <li><b>‹ ›</b> 切上 / 下周；<b>本周</b> 一键回到当前教学周。</li>
           <li>日视图顶部 7 天日期条，点某天跳到那天。</li>
-          <li>点课程格子 → 弹出：<b>本周停课</b>（假期 / 出差）、<b>调课</b>（改到某周几某节）、<b>加一次临时课</b>。</li>
+          <li>点课程格子 → 弹出：<b>停课</b> / <b>调课</b> / <b>加一次临时课</b>。停课、调课都能选 <b>「单日」或「整周」</b>。</li>
+          <li><b>选「单日」</b>可精确到某一天（如 10/1 当天停课），<b>调课还能指定「调到哪一天」</b>——适配国庆等大假期补课（例：把 9/30 的课调到 10/8 补上）。</li>
           <li>页内「本周停课」按钮可一键停掉整周，再点恢复；所有操作都能<b>撤销</b>。</li>
         </ul>
       </div>
@@ -404,10 +405,9 @@ ol.steps .ico{font-size:13px}
       <div class="card" style="padding:14px 16px">
         <div class="step"><span class="n">1</span><p>App Store 装 <b>Scriptable</b>（免费）。</p></div>
         <div class="step"><span class="n">2</span><p>打开 → 右上角 <b>+</b> → 全选粘贴 <b>课表小组件.js</b> → 命名「课表」。</p></div>
-        <div class="step"><span class="n">3</span><p>桌面长按空白处 → 加小组件 → 选 <b>Scriptable</b> → 选尺寸（小 / 中 / 大）→ 长按组件 → 编辑 → Script 选「课表」。</p></div>
+        <div class="step"><span class="n">3</span><p>桌面长按空白处 → 加小组件 → 选 <b>Scriptable</b> → 选尺寸（小 / 中）→ 长按组件 → 编辑 → Script 选「课表」。</p></div>
         <p><b>小</b>＝按当前时间显示「上午 / 下午 / 晚上 / 明天上午」的课。时段划分：8:00–11:30 为上午，13:40–17:10 为下午，18:00 以后为晚上；某时段的课全部结束后自动切到下一时段，晚上结束后显示次日上午。</p>
-        <p><b>中</b>＝今天全部课程（含时间、课名、教师/地点），并标出当前所在时段，比小尺寸更全。</p>
-        <p><b>大</b>＝当前教学周的网格视图（周一到周日 × 第 1–12 节，当日所在列高亮）。</p>
+        <p><b>中</b>＝左右两栏：左栏「当前时段」、右栏「下一时段」（上午 / 下午 / 晚上），各自列出该时段的课程（课名 + 时间）。当天没有下一个时段时，右栏自动接「明天上午」；深夜全部结束则显示「明日 / 今日已结束」。</p>
         <p>脚本默认读云端 JSON，离线时回退读 Scriptable 文件夹里的同名文件。</p>
       </div>
 
@@ -560,22 +560,49 @@ function curWeek(s){
 function weekStart(s,w){return addDays(parseYmd(s.startDate),(w-1)*7);}
 function clampWeek(s,w){return Math.max(1,Math.min(s.weeks,w));}
 
-/* 取某一周要显示的课 */
+/* 取某一周要显示的课（支持「按日期」的调停课：先查 课程id:日期，再回退 课程id:周次） */
 function weekItems(s,w){
   var items=[],st=weekStart(s,w),en=addDays(st,6);
-  s.courses.forEach(function(c){
-    if(c.weeks.indexOf(w)<0)return;
-    var a=s.adj[c.id+':'+w];
-    if(a&&a.type==='cancel'){items.push({course:c,cancelled:true,day:c.day,sp:c.startPeriod,ep:c.endPeriod,place:c.place});return;}
-    if(a&&a.type==='move'){
-      items.push({course:c,moved:true,day:a.day,sp:a.startPeriod,ep:a.endPeriod,place:a.place!==undefined?a.place:c.place});
-      return;
-    }
-    items.push({course:c,day:c.day,sp:c.startPeriod,ep:c.endPeriod,place:c.place});
+  var dates=[];for(var i=0;i<7;i++)dates.push(addDays(st,i));
+  // 1) 常规课：逐日判定
+  dates.forEach(function(dt){
+    s.courses.forEach(function(c){
+      if(c.weeks.indexOf(w)<0)return;            // 该教学周本无此课
+      if(dayNo(dt)!==c.day)return;              // 这天不是该课的上课日
+      var dk=c.id+':'+ymd(dt), wk=c.id+':'+w;
+      var a=s.adj[dk]||s.adj[wk];
+      if(a&&a.type==='cancel'){
+        items.push({course:c,cancelled:true,single:(s.adj[dk]&&s.adj[dk]===a),
+          date:dt,day:c.day,sp:c.startPeriod,ep:c.endPeriod,place:c.place});
+        return;
+      }
+      if(a&&a.type==='move'){
+        if(a.toDate){ // 调到别的日期：原日期停上，目标日期另显
+          items.push({course:c,moved:true,movedAway:true,toDate:parseYmd(a.toDate),
+            date:dt,day:c.day,sp:c.startPeriod,ep:c.endPeriod,place:c.place});
+        }else{        // 同周内改天/节次：落到目标星期
+          items.push({course:c,moved:true,date:addDays(st,a.day-1),day:a.day,
+            sp:a.startPeriod,ep:a.endPeriod,place:(a.place!==undefined?a.place:c.place)});
+        }
+        return;
+      }
+      items.push({course:c,date:dt,day:c.day,sp:c.startPeriod,ep:c.endPeriod,place:c.place});
+    });
   });
+  // 2) 调到本周的课（扫描带 toDate 的 move）
+  Object.keys(s.adj).forEach(function(k){
+    var a=s.adj[k];if(!a||a.type!=='move'||!a.toDate)return;
+    var td=parseYmd(a.toDate);if(td<st||td>en)return;
+    var id=k.split(':')[0],c=null;
+    s.courses.forEach(function(x){if(x.id===id)c=x;});if(!c)return;
+    items.push({course:c,moved:true,fromDate:parseYmd(k.split(':')[1]),
+      date:td,day:dayNo(td),sp:a.startPeriod,ep:a.endPeriod,
+      place:(a.place!==undefined?a.place:c.place)});
+  });
+  // 3) 临时加课（按日期）
   s.extras.forEach(function(x){
     var d=parseYmd(x.date);
-    if(d>=st&&d<=en)items.push({extra:x,day:dayNo(d),sp:x.startPeriod,ep:x.endPeriod,place:x.place,name:x.name,teacher:x.teacher});
+    if(d>=st&&d<=en)items.push({extra:x,date:d,day:dayNo(d),sp:x.startPeriod,ep:x.endPeriod,place:x.place,name:x.name,teacher:x.teacher});
   });
   return items;
 }
@@ -633,7 +660,7 @@ function renderMain(s){
     $('strip').classList.add('hidden');
   }
 
-  var items=weekItems(s,S.week).filter(function(x){return x.day===S.day;})
+  var items=weekItems(s,S.week).filter(function(x){return ymd(x.date)===ymd(addDays(st,S.day-1));})
     .sort(function(a,b){return a.sp-b.sp;});
 
   var wc=s.courses.filter(function(c){return c.weeks.indexOf(S.week)>=0;});
@@ -672,7 +699,7 @@ function renderMain(s){
   $('content').querySelectorAll('[data-act]').forEach(function(el){
     el.onclick=function(){
       var a=el.dataset.act;
-      if(a==='course')openCourse(s,el.dataset.id,S.week);
+      if(a==='course')openCourse(s,el.dataset.id,S.week,+el.dataset.day);
       if(a==='extra')openExtra(s,el.dataset.id);
       if(a==='cell')openAdd(s,+el.dataset.day,+el.dataset.p);
       if(a==='undo'){delete s.adj[el.dataset.k];delete s.adj[el.dataset.k2];save();toast('已撤销');render();}
@@ -721,15 +748,18 @@ function itemRow(s,x,w){
   var c=x.course,color=c?c.color:PALETTE[0],name=c?c.name:x.name,teacher=c?c.teacher:x.teacher;
   var cls='ci'+(x.cancelled?' dim':'');
   var badges='';
-  if(x.cancelled)badges+=' <span class="badge b-off">本周停课</span>';
-  if(x.moved)badges+=' <span class="badge b-mv">已调课</span>';
+  if(x.cancelled)badges+=' <span class="badge b-off">'+(x.single?('停课 '+fmtMD(x.date)):'本周停课')+'</span>';
+  if(x.movedAway)badges+=' <span class="badge b-mv">调至 '+fmtMD(x.toDate)+' 周'+DAYCN[dayNo(x.toDate)-1]+'</span>';
+  if(x.moved&&!x.movedAway)badges+=' <span class="badge b-mv">已调课</span>';
   if(x.extra)badges+=' <span class="badge b-tmp">临时</span>';
   var sub='';
+  if(x.movedAway)sub+='<i>➡️ 调到 '+fmtFull(x.toDate)+' 第'+x.sp+(x.sp!==x.ep?'-'+x.ep:'')+'节</i>';
+  if(x.moved&&!x.movedAway&&x.fromDate)sub+='<i>📌 原 '+fmtMD(x.fromDate)+'</i>';
   if(teacher)sub+='<i>👤 '+esc(teacher)+'</i>';
   if(x.place)sub+='<i>📍 '+esc(x.place)+'</i>';
   var wkt='';
   if(c&&c.weeks.length&&c.weeks.length!==s.weeks)wkt='上课周次：'+weekText(c.weeks);
-  return '<div class="'+cls+'" data-act="'+(x.extra?'extra':'course')+'" data-id="'+(c?c.id:x.extra.id)+'">'+
+  return '<div class="'+cls+'" data-act="'+(x.extra?'extra':'course')+'" data-day="'+x.day+'" data-id="'+(c?c.id:x.extra.id)+'">'+
     '<div class="cibar" style="background:'+color+'"></div>'+
     '<div class="cimain"><div class="citop"><span class="citime">'+timeRange(s,x.sp,x.ep)+'</span>'+
     '<span class="ciname">'+esc(name)+badges+'</span></div>'+
@@ -745,7 +775,16 @@ function adjBlock(s,w){
     var id=k.split(':')[0],c=null;
     s.courses.forEach(function(x){if(x.id===id)c=x;});
     if(!c)return;
-    var txt=a.type==='cancel'?'停课':'调至 周'+DAYCN[a.day-1]+' 第'+a.startPeriod+(a.startPeriod!==a.endPeriod?'-'+a.endPeriod:'')+'节'+(a.place?' · '+a.place:'');
+    var key2=k.split(':')[1];
+    var isDate=/^\d{4}-\d{2}-\d{2}$/.test(key2);
+    var txt;
+    if(a.type==='cancel'){
+      txt = isDate ? ('停课（'+fmtMD(parseYmd(key2))+'）') : '停课（整周）';
+    }else if(a.toDate){
+      txt='调至 '+fmtMD(parseYmd(a.toDate))+' 周'+DAYCN[dayNo(parseYmd(a.toDate))-1]+' 第'+a.startPeriod+(a.startPeriod!==a.endPeriod?'-'+a.endPeriod:'')+'节'+(a.place?' · '+a.place:'');
+    }else{
+      txt='调至 周'+DAYCN[a.day-1]+' 第'+a.startPeriod+(a.startPeriod!==a.endPeriod?'-'+a.endPeriod:'')+'节'+(a.place?' · '+a.place:'');
+    }
     rows.push('<div class="adjitem"><span class="t">'+esc(c.name)+'：<b>'+esc(txt)+'</b></span>'+
       '<button class="undo" data-act="undo" data-k="'+k+'">撤销</button></div>');
   });
@@ -818,13 +857,15 @@ function gridHtml(s,w){
         });
         if(start){
           var c=start.course,color=c?c.color:PALETTE[0],nm=c?c.name:start.name,span=start.ep-start.sp+1;
+          var dim=(start.cancelled||start.movedAway);
+          var tag=(start.cancelled?'停课':(start.movedAway?('调至 '+fmtMD(start.toDate)):(start.moved?'已调课':'')));
           g+='<div class="gcell" style="grid-column:'+col+';grid-row:'+(p+1)+' / span '+span+'">'+
-            '<div class="gblock'+(start.cancelled?' dim':'')+'" '+
-            'data-act="'+(start.extra?'extra':'course')+'" data-id="'+(c?c.id:start.extra.id)+'" '+
+            '<div class="gblock'+(dim?' dim':'')+'" '+
+            'data-act="'+(start.extra?'extra':'course')+'" data-day="'+o.day+'" data-id="'+(c?c.id:start.extra.id)+'" '+
             'style="background:'+color+'1f;border-left:3px solid '+color+';color:'+color+'">'+
             '<b>'+esc(nm)+'</b>'+
             (start.place?'<span class="gl">'+esc(start.place)+'</span>':'')+
-            (start.cancelled?'<span class="gl">停课</span>':'')+
+            (tag?'<span class="gl">'+tag+'</span>':'')+
             '</div></div>';
           continue;
         }
@@ -1027,10 +1068,10 @@ function dayOptions(sel){var o='';for(var i=1;i<=7;i++)o+='<option value="'+i+'"
 function periodOptions(s,n,sel){var o='';for(var i=1;i<=n;i++){var p=s.periods[i-1];o+='<option value="'+i+'"'+(sel===i?' selected':'')+'>第'+i+'节'+(p?' '+p.start:'')+'</option>';}return o;}
 
 /* 课程详情 */
-function openCourse(s,id,w){
+function openCourse(s,id,w,day){
   var c=null;s.courses.forEach(function(x){if(x.id===id)c=x;});
   if(!c)return;
-  var a=s.adj[c.id+':'+w];
+  var dt=addDays(weekStart(s,w),((day||c.day)-1));
   var body=
     '<div class="card" style="padding:14px 16px;margin-bottom:12px">'+
       '<div style="font-size:17px;font-weight:800;color:'+c.color+'">'+esc(c.name)+'</div>'+
@@ -1039,22 +1080,33 @@ function openCourse(s,id,w){
       '<div class="kv"><span class="k">时间</span><span class="v">周'+DAYCN[c.day-1]+' 第'+c.startPeriod+(c.startPeriod!==c.endPeriod?'-'+c.endPeriod:'')+'节<br>'+timeRange(s,c.startPeriod,c.endPeriod)+'</span></div>'+
       '<div class="kv"><span class="k">上课周次</span><span class="v">'+esc(weekText(c.weeks))+'</span></div>'+
     '</div>'+
-    '<div class="sec-title">第'+w+'周（本周）</div>'+
-    '<button class="actbtn" id="cCancel">'+(a&&a.type==='cancel'?'✓ 本周已停课（点击恢复）':'停掉本周这节课')+'<span class="sub">假期、教师出差等情形</span></button>'+
-    '<button class="actbtn" id="cMove">调整本周这节课<span class="sub">改到别的天/节次，或换个教室</span></button>'+
+    '<div class="sec-title">调停课（可指定日期，适配假期补课）</div>'+
+    '<div class="row"><label>适用</label><select id="cScope">'+
+      '<option value="date">单日 '+fmtMD(dt)+'（周'+DAYCN[dayNo(dt)-1]+'）</option>'+
+      '<option value="week">整周（第 '+w+' 周）</option>'+
+    '</select></div>'+
+    '<button class="actbtn" id="cCancel">停课<span class="sub">放假、教师出差等</span></button>'+
+    '<button class="actbtn" id="cMove">调课<span class="sub">改到别的日期/节次，或换教室</span></button>'+
     '<button class="actbtn" id="cExtra">加一次临时课<span class="sub">补课、调课新增</span></button>'+
     '<div class="sec-title">整门课程</div>'+
     '<button class="actbtn" id="cEdit">编辑课程信息<span class="sub">名称、教师、地点、节次、周次、颜色</span></button>'+
     '<button class="actbtn warn" id="cDel">删除整门课程</button>';
   openSheet('课程详情',body,'');
   $('cCancel').onclick=function(){
-    var k=c.id+':'+w;
-    if(s.adj[k]&&s.adj[k].type==='cancel'){delete s.adj[k];toast('已恢复');}
-    else{s.adj[k]={type:'cancel'};toast('本周已停课');}
+    var scope=$('cScope').value;
+    if(scope==='date'){
+      var k=c.id+':'+ymd(dt);
+      if(s.adj[k]&&s.adj[k].type==='cancel'){delete s.adj[k];toast('已恢复 '+fmtMD(dt)+' 的课');}
+      else{s.adj[k]={type:'cancel'};toast('已停 '+fmtMD(dt)+' 的课');}
+    }else{
+      var k2=c.id+':'+w;
+      if(s.adj[k2]&&s.adj[k2].type==='cancel'){delete s.adj[k2];toast('已恢复第'+w+'周');}
+      else{s.adj[k2]={type:'cancel'};toast('已停第'+w+'周');}
+    }
     save();closeSheet();render();
   };
-  $('cMove').onclick=function(){openMove(s,c,w);};
-  $('cExtra').onclick=function(){openAdd(s,c.day,c.startPeriod,c);};
+  $('cMove').onclick=function(){openMove(s,c,dt,w);};
+  $('cExtra').onclick=function(){openAdd(s,dayNo(dt),c.startPeriod,c);};
   $('cEdit').onclick=function(){openEdit(s,c);};
   $('cDel').onclick=function(){
     if(!confirm('确定删除「'+c.name+'」？该课程所有周次都会被删除。'))return;
@@ -1064,19 +1116,31 @@ function openCourse(s,id,w){
   };
 }
 
-/* 本周调课 */
-function openMove(s,c,w){
+/* 调课（可指定调到哪一天，适配国庆等假期补课） */
+function openMove(s,c,dt,w){
   var body=
-    '<div class="note" style="margin-bottom:12px">只影响第 '+w+' 周，其它周次不受影响。</div>'+
-    '<div class="row"><label>星期</label><select id="mDay">'+dayOptions(c.day)+'</select></div>'+
+    '<div class="note" style="margin-bottom:12px">把 <b>'+esc(c.name)+'</b> 这节课调走。原时间：'+fmtFull(dt)+'（周'+DAYCN[dayNo(dt)-1]+'）第'+c.startPeriod+(c.startPeriod!==c.endPeriod?'-'+c.endPeriod:'')+'节。</div>'+
+    '<div class="row"><label>调到日期</label><input type="date" id="mDate" value="'+ymd(dt)+'"></div>'+
+    '<div class="row"><label>星期</label><select id="mDay" disabled>'+dayOptions(dayNo(dt))+'</select></div>'+
     '<div class="two"><div class="row"><label>开始节</label><select id="mS">'+periodOptions(s,s.periods.length,c.startPeriod)+'</select></div>'+
     '<div class="row"><label>结束节</label><select id="mE">'+periodOptions(s,s.periods.length,c.endPeriod)+'</select></div></div>'+
     '<div class="row"><label>上课地点</label><input id="mP" value="'+esc(c.place||'')+'" placeholder="如 丹青楼420"></div>';
-  openSheet('调整本周课程',body,'<button class="btn" id="mOk">保存</button>');
+  openSheet('调课',body,'<button class="btn" id="mOk">保存</button>');
+  function syncDay(){var dd=parseYmd($('mDate').value);$('mDay').innerHTML=dayOptions(dayNo(dd));}
+  $('mDate').onchange=syncDay;
   $('mOk').onclick=function(){
     var a=+$('mS').value,b=+$('mE').value;if(b<a)b=a;
-    s.adj[c.id+':'+w]={type:'move',day:+$('mDay').value,startPeriod:a,endPeriod:b,place:$('mP').value.trim()};
-    save();closeSheet();toast('已调整本周课程');render();
+    var toDate=$('mDate').value;
+    if(toDate===ymd(dt)){
+      // 调到同一天：仅改节次/地点（按周处理）
+      s.adj[c.id+':'+w]={type:'move',day:c.day,startPeriod:a,endPeriod:b,place:$('mP').value.trim()};
+      toast('已调整本周课程');
+    }else{
+      // 调到别的日期：原日期停上，目标日期另显
+      s.adj[c.id+':'+ymd(dt)]={type:'move',toDate:toDate,startPeriod:a,endPeriod:b,place:$('mP').value.trim()};
+      toast('已调至 '+fmtMD(parseYmd(toDate)));
+    }
+    save();closeSheet();render();
   };
 }
 
